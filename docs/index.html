@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sleep Stage Classifier</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f3;
+        --ink: #1d2524;
+        --muted: #66706c;
+        --line: #d8ded8;
+        --panel: #ffffff;
+        --teal: #0f7c75;
+        --green: #3f7d3b;
+        --amber: #b87514;
+        --rose: #b04465;
+        --indigo: #4f5ca8;
+        --shadow: 0 18px 42px rgba(29, 37, 36, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 247, 243, 0.9)),
+          repeating-linear-gradient(90deg, rgba(15, 124, 117, 0.06) 0 1px, transparent 1px 64px);
+        color: var(--ink);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1180px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 22px 0 32px;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 0 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, rgba(15, 124, 117, 0.95), rgba(79, 92, 168, 0.9)),
+          radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.75), transparent 30%);
+        box-shadow: var(--shadow);
+        flex: 0 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.35rem, 2.2vw, 2rem);
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .repo-link {
+        color: var(--teal);
+        text-decoration: none;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.82fr) minmax(360px, 1.18fr);
+        gap: 18px;
+        padding-top: 18px;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .controls {
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+        align-content: start;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      textarea,
+      select,
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+        color: var(--ink);
+        outline: none;
+      }
+
+      textarea:focus,
+      select:focus,
+      input:focus {
+        border-color: var(--teal);
+        box-shadow: 0 0 0 3px rgba(15, 124, 117, 0.14);
+      }
+
+      textarea {
+        min-height: 220px;
+        resize: vertical;
+        padding: 12px;
+        line-height: 1.45;
+      }
+
+      select,
+      input {
+        height: 42px;
+        padding: 0 10px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .button-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        height: 42px;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 14px;
+        color: #fff;
+        background: var(--teal);
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      button.secondary {
+        background: #303735;
+      }
+
+      button:hover {
+        filter: brightness(0.95);
+      }
+
+      .results {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        min-height: 680px;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .stage {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 4.3rem);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .confidence {
+        align-self: center;
+        min-width: 118px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+        text-align: center;
+      }
+
+      .confidence strong {
+        display: block;
+        font-size: 1.6rem;
+      }
+
+      .confidence span {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .probabilities {
+        display: grid;
+        gap: 10px;
+        padding: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .probability {
+        display: grid;
+        grid-template-columns: 48px 1fr 54px;
+        align-items: center;
+        gap: 10px;
+        min-height: 28px;
+      }
+
+      .bar-track {
+        height: 12px;
+        border-radius: 999px;
+        background: #e7ebe7;
+        overflow: hidden;
+      }
+
+      .bar {
+        height: 100%;
+        width: 0;
+        border-radius: inherit;
+        transition: width 240ms ease;
+      }
+
+      .visuals {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        gap: 16px;
+        padding: 18px;
+      }
+
+      .canvas-wrap {
+        display: grid;
+        gap: 10px;
+        min-height: 320px;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 260px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .metric {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfa;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 1.08rem;
+      }
+
+      .status {
+        min-height: 20px;
+        color: var(--rose);
+        font-weight: 700;
+      }
+
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        .results {
+          min-height: 0;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          width: min(100vw - 20px, 1180px);
+          padding-top: 14px;
+        }
+
+        header,
+        .summary,
+        .split,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .probability {
+          grid-template-columns: 44px 1fr 48px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div class="brand">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <h1>Sleep Stage Classifier</h1>
+            <p class="subtitle">EEG window prediction with signal attribution</p>
+          </div>
+        </div>
+        <a class="repo-link" href="https://github.com/Kushagra963-lab/sleep-stage-classifier">GitHub</a>
+      </header>
+
+      <main>
+        <section class="panel controls" aria-label="Classifier controls">
+          <label>
+            EEG samples
+            <textarea id="signalInput" spellcheck="false"></textarea>
+          </label>
+
+          <div class="split">
+            <label>
+              Sample rate
+              <input id="sampleRate" type="number" min="1" max="2048" step="1" value="100" />
+            </label>
+            <label>
+              Demo signal
+              <select id="preset">
+                <option value="wake">Wake</option>
+                <option value="n1">N1</option>
+                <option value="n2">N2</option>
+                <option value="n3">N3</option>
+                <option value="rem">REM</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button id="classifyButton" type="button">Classify</button>
+            <button class="secondary" id="generateButton" type="button">Generate</button>
+          </div>
+          <div class="status" id="status" role="status"></div>
+        </section>
+
+        <section class="panel results" aria-label="Classifier results">
+          <div class="summary">
+            <div>
+              <p class="subtitle">Predicted stage</p>
+              <h2 class="stage" id="stage">N2</h2>
+            </div>
+            <div class="confidence">
+              <strong id="confidence">0%</strong>
+              <span>Confidence</span>
+            </div>
+          </div>
+
+          <div class="probabilities" id="probabilities"></div>
+
+          <div class="visuals">
+            <div class="canvas-wrap">
+              <canvas id="waveform" width="920" height="260" aria-label="EEG waveform"></canvas>
+              <canvas id="heatmap" width="920" height="120" aria-label="Attribution heatmap"></canvas>
+            </div>
+            <div class="metrics">
+              <div class="metric">
+                <span>Window</span>
+                <strong id="windowLength">0.0 s</strong>
+              </div>
+              <div class="metric">
+                <span>Dominant band</span>
+                <strong id="dominantBand">-</strong>
+              </div>
+              <div class="metric">
+                <span>Samples</span>
+                <strong id="sampleCount">0</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const stages = ["Wake", "N1", "N2", "N3", "REM"];
+      const colors = ["#0f7c75", "#b87514", "#4f5ca8", "#3f7d3b", "#b04465"];
+      const bands = {
+        delta: [0.5, 4],
+        theta: [4, 8],
+        alpha: [8, 12],
+        sigma: [12, 16],
+        beta: [16, 30],
+        gamma: [30, 45],
+      };
+
+      const signalInput = document.querySelector("#signalInput");
+      const sampleRateInput = document.querySelector("#sampleRate");
+      const presetInput = document.querySelector("#preset");
+      const statusNode = document.querySelector("#status");
+
+      function parseSignal(text) {
+        return text
+          .split(/[\s,;\n]+/)
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value));
+      }
+
+      function normalize(signal) {
+        const mean = signal.reduce((sum, value) => sum + value, 0) / signal.length;
+        const variance =
+          signal.reduce((sum, value) => sum + (value - mean) ** 2, 0) / Math.max(signal.length, 1);
+        const std = Math.sqrt(variance) || 1;
+        return signal.map((value) => (value - mean) / std);
+      }
+
+      function goertzel(signal, sampleRate, frequency) {
+        const omega = (2 * Math.PI * frequency) / sampleRate;
+        const coefficient = 2 * Math.cos(omega);
+        let previous = 0;
+        let previous2 = 0;
+
+        for (const sample of signal) {
+          const current = sample + coefficient * previous - previous2;
+          previous2 = previous;
+          previous = current;
+        }
+
+        return previous2 ** 2 + previous ** 2 - coefficient * previous * previous2;
+      }
+
+      function bandPowers(signal, sampleRate) {
+        const usableNyquist = Math.max(sampleRate / 2, 1);
+        const raw = {};
+        let total = 1e-9;
+
+        for (const [name, range] of Object.entries(bands)) {
+          const low = range[0];
+          const high = Math.min(range[1], usableNyquist * 0.95);
+          let power = 0;
+          for (let frequency = low; frequency < high; frequency += 0.5) {
+            power += goertzel(signal, sampleRate, frequency);
+          }
+          raw[name] = Math.max(power, 0);
+          total += raw[name];
+        }
+
+        return Object.fromEntries(Object.entries(raw).map(([name, value]) => [name, value / total]));
+      }
+
+      function softmax(values) {
+        const max = Math.max(...values);
+        const exps = values.map((value) => Math.exp(value - max));
+        const total = exps.reduce((sum, value) => sum + value, 0);
+        return exps.map((value) => value / total);
+      }
+
+      function predict(signal, sampleRate) {
+        const normalized = normalize(signal);
+        const powers = bandPowers(normalized, sampleRate);
+        const variance =
+          normalized.reduce((sum, value) => sum + value * value, 0) / Math.max(normalized.length, 1);
+        const scaledVariance = Math.min(variance, 4) / 4;
+
+        const logits = [
+          1.35 * powers.alpha + 0.55 * powers.beta + 0.15 * scaledVariance,
+          1.3 * powers.theta + 0.25 * powers.alpha,
+          1.45 * powers.sigma + 0.5 * powers.theta + 0.18,
+          2.2 * powers.delta + 0.2 * powers.sigma,
+          0.55 * powers.theta + 0.6 * powers.beta + 0.3 * powers.gamma + 0.08,
+        ];
+
+        const probabilities = softmax(logits);
+        const index = probabilities.indexOf(Math.max(...probabilities));
+        return { index, probabilities, powers, normalized };
+      }
+
+      function attribution(signal, segments = 48) {
+        const normalized = normalize(signal);
+        const width = Math.max(1, Math.floor(normalized.length / segments));
+        const scores = [];
+        for (let index = 0; index < segments; index += 1) {
+          const start = index * width;
+          const slice = normalized.slice(start, index === segments - 1 ? normalized.length : start + width);
+          const average =
+            slice.reduce((sum, value, itemIndex) => {
+              const previous = itemIndex > 0 ? slice[itemIndex - 1] : value;
+              return sum + Math.abs(value) * 0.7 + Math.abs(value - previous) * 0.3;
+            }, 0) / Math.max(slice.length, 1);
+          scores.push(average);
+        }
+        const max = Math.max(...scores, 1e-9);
+        return scores.map((score) => score / max);
+      }
+
+      function generateSignal(stageKey) {
+        const sampleRate = Number(sampleRateInput.value) || 100;
+        const seconds = 30;
+        const count = sampleRate * seconds;
+        const profiles = {
+          wake: [
+            [10, 0.9],
+            [22, 0.35],
+            [36, 0.12],
+          ],
+          n1: [
+            [6, 0.85],
+            [9, 0.22],
+            [2, 0.18],
+          ],
+          n2: [
+            [13.5, 0.9],
+            [6, 0.36],
+            [2.5, 0.24],
+          ],
+          n3: [
+            [2, 1.2],
+            [3.2, 0.6],
+            [13, 0.16],
+          ],
+          rem: [
+            [7, 0.55],
+            [21, 0.55],
+            [34, 0.2],
+          ],
+        };
+        const waves = profiles[stageKey] || profiles.n2;
+        const signal = [];
+
+        for (let index = 0; index < count; index += 1) {
+          const time = index / sampleRate;
+          let value = 0;
+          waves.forEach(([frequency, amplitude], waveIndex) => {
+            value += amplitude * Math.sin(2 * Math.PI * frequency * time + waveIndex * 0.9);
+          });
+          value += 0.08 * Math.sin(2 * Math.PI * 0.15 * time);
+          value += ((index * 9301 + 49297) % 233280) / 2332800 - 0.05;
+          signal.push(Number(value.toFixed(5)));
+        }
+
+        signalInput.value = signal.join(", ");
+      }
+
+      function drawWaveform(canvas, signal) {
+        const context = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+        context.clearRect(0, 0, width, height);
+        context.strokeStyle = "#d8ded8";
+        context.lineWidth = 1;
+
+        for (let y = 40; y < height; y += 40) {
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(width, y);
+          context.stroke();
+        }
+
+        const normalized = normalize(signal);
+        context.strokeStyle = "#0f7c75";
+        context.lineWidth = 2;
+        context.beginPath();
+        normalized.forEach((value, index) => {
+          const x = (index / Math.max(normalized.length - 1, 1)) * width;
+          const y = height / 2 - value * (height * 0.18);
+          if (index === 0) {
+            context.moveTo(x, y);
+          } else {
+            context.lineTo(x, y);
+          }
+        });
+        context.stroke();
+      }
+
+      function drawHeatmap(canvas, scores) {
+        const context = canvas.getContext("2d");
+        const width = canvas.width;
+        const height = canvas.height;
+        const segmentWidth = width / scores.length;
+        context.clearRect(0, 0, width, height);
+        scores.forEach((score, index) => {
+          const hue = 190 - score * 150;
+          context.fillStyle = `hsl(${hue}, ${55 + score * 30}%, ${82 - score * 34}%)`;
+          context.fillRect(index * segmentWidth, 0, Math.ceil(segmentWidth), height);
+        });
+        context.strokeStyle = "#d8ded8";
+        context.strokeRect(0.5, 0.5, width - 1, height - 1);
+      }
+
+      function renderProbabilities(probabilities) {
+        const container = document.querySelector("#probabilities");
+        container.innerHTML = "";
+        probabilities.forEach((probability, index) => {
+          const row = document.createElement("div");
+          row.className = "probability";
+          row.innerHTML = `
+            <strong>${stages[index]}</strong>
+            <div class="bar-track"><div class="bar" style="background:${colors[index]};width:${(
+              probability * 100
+            ).toFixed(1)}%"></div></div>
+            <strong>${Math.round(probability * 100)}%</strong>
+          `;
+          container.appendChild(row);
+        });
+      }
+
+      function classify() {
+        statusNode.textContent = "";
+        const signal = parseSignal(signalInput.value);
+        const sampleRate = Number(sampleRateInput.value);
+
+        if (signal.length < 32) {
+          statusNode.textContent = "Add at least 32 numeric samples.";
+          return;
+        }
+        if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
+          statusNode.textContent = "Enter a valid sample rate.";
+          return;
+        }
+
+        const result = predict(signal, sampleRate);
+        const scores = attribution(signal);
+        const topBand = Object.entries(result.powers).sort((a, b) => b[1] - a[1])[0];
+
+        document.querySelector("#stage").textContent = stages[result.index];
+        document.querySelector("#confidence").textContent = `${Math.round(
+          result.probabilities[result.index] * 100
+        )}%`;
+        document.querySelector("#windowLength").textContent = `${(signal.length / sampleRate).toFixed(1)} s`;
+        document.querySelector("#dominantBand").textContent = topBand ? topBand[0] : "-";
+        document.querySelector("#sampleCount").textContent = String(signal.length);
+
+        renderProbabilities(result.probabilities);
+        drawWaveform(document.querySelector("#waveform"), signal);
+        drawHeatmap(document.querySelector("#heatmap"), scores);
+      }
+
+      document.querySelector("#generateButton").addEventListener("click", () => {
+        generateSignal(presetInput.value);
+        classify();
+      });
+      document.querySelector("#classifyButton").addEventListener("click", classify);
+      presetInput.addEventListener("change", () => {
+        generateSignal(presetInput.value);
+        classify();
+      });
+
+      generateSignal("n2");
+      classify();
+    </script>
+  </body>
+</html>
+

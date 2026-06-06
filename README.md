@@ -4,6 +4,8 @@ FastAPI service for classifying 30-second EEG windows into sleep stages with CNN
 
 The API runs out of the box with a deterministic demo predictor, so the project can be tested before a trained model is added. For production use, train on Sleep-EDF or another labeled EEG dataset and save the model to `models/sleep_model.keras`.
 
+Live browser demo: https://kushagra963-lab.github.io/sleep-stage-classifier/
+
 ## Features
 
 - EEG preprocessing: bandpass filtering, normalization, epoching, and band-power extraction
@@ -118,7 +120,13 @@ docker run -p 8000:8000 sleep-stage-classifier
 
 ## GitHub Deployment
 
-This repo includes `.github/workflows/docker.yml`. After pushing to GitHub, every push to `main` builds and publishes the API Docker image to GitHub Container Registry:
+The `docs/` folder contains a static browser classifier that can be hosted permanently with GitHub Pages from the `main` branch:
+
+```text
+https://kushagra963-lab.github.io/sleep-stage-classifier/
+```
+
+The workflow files in `.github/workflows/` can also publish the API Docker image to GitHub Container Registry when pushed with a GitHub token that has `workflow` scope:
 
 ```text
 ghcr.io/<owner>/<repo>:latest
@@ -131,4 +139,3 @@ The image can then be deployed to any container host that supports GHCR images.
 - The default predictor is a demo baseline so tests and API demos work without a trained model.
 - To use a trained CNN-LSTM, place the Keras model at `models/sleep_model.keras`.
 - SHAP and Grad-CAM endpoints use lightweight signal attribution fallbacks unless optional ML dependencies and a compatible trained model are available.
-
